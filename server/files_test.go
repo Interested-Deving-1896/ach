@@ -1617,3 +1617,153 @@ func TestFiles__decodeReverseFileRequestWithFileID(t *testing.T) {
 	require.Equal(t, 1, int(r.effectiveEntryDate.Month()))
 	require.Equal(t, 15, r.effectiveEntryDate.Day())
 }
+
+func TestParseMaxBodySize(t *testing.T) {
+	tests := []struct {
+		in      string
+		want    int64
+		wantErr bool
+	}{
+		{in: "12MB", want: 12 * 1024 * 1024},
+		{in: "12mb", want: 12 * 1024 * 1024},
+		{in: "12M", want: 12 * 1024 * 1024},
+		{in: "12MiB", want: 12 * 1024 * 1024},
+		{in: "25MB", want: 25 * 1024 * 1024},
+		{in: "1024KB", want: 1024 * 1024},
+		{in: "1G", want: 1024 * 1024 * 1024},
+		{in: "1GB", want: 1024 * 1024 * 1024},
+		{in: "10485760", want: 10485760},
+		{in: "100B", want: 100},
+		{in: "1.5MB", want: 1572864},
+		{in: " 15MB ", want: 15 * 1024 * 1024},
+		{in: "", wantErr: true},
+		{in: "0", wantErr: true},
+		{in: "-5MB", wantErr: true},
+		{in: "abc", wantErr: true},
+	}
+	for _, tc := range tests {
+		name := tc.in
+		if name == "" {
+			name = "empty"
+		}
+		t.Run(name, func(t *testing.T) {
+			got, err := ParseMaxBodySize(tc.in)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestConfigureMaxBodySizeFromEnv(t *testing.T) {
+	original := MaxBodySize()
+	t.Cleanup(func() {
+		SetMaxBodySize(original)
+	})
+
+	t.Setenv("ACH_MAX_BODY_SIZE", "")
+	// Ensure empty resets nothing harmful — restore default first
+	SetMaxBodySize(defaultMaxBodySize)
+
+	size, err := ConfigureMaxBodySizeFromEnv()
+	require.NoError(t, err)
+	require.Equal(t, defaultMaxBodySize, size)
+	require.Equal(t, defaultMaxBodySize, MaxBodySize())
+
+	t.Setenv("ACH_MAX_BODY_SIZE", "25MB")
+	size, err = ConfigureMaxBodySizeFromEnv()
+	require.NoError(t, err)
+	require.Equal(t, int64(25*1024*1024), size)
+	require.Equal(t, int64(25*1024*1024), MaxBodySize())
+
+	t.Setenv("ACH_MAX_BODY_SIZE", "nope")
+	size, err = ConfigureMaxBodySizeFromEnv()
+	require.Error(t, err)
+	// Invalid value should leave the previous setting in place
+	require.Equal(t, int64(25*1024*1024), size)
+	require.Equal(t, int64(25*1024*1024), MaxBodySize())
+}
+
+func TestReadBodyRespectsMaxBodySize(t *testing.T) {
+	original := MaxBodySize()
+	t.Cleanup(func() {
+		SetMaxBodySize(original)
+	})
+
+	SetMaxBodySize(16)
+
+	// Bodies within the limit are accepted in full.
+	body := io.NopCloser(strings.NewReader(strings.Repeat("a", 16)))
+	bs, err := readBody(body)
+	require.NoError(t, err)
+	require.Len(t, bs, 16)
+
+	// Bodies over the limit are rejected rather than silently truncated.
+	body = io.NopCloser(strings.NewReader(strings.Repeat("a", 64)))
+	bs, err = readBody(body)
+	require.ErrorIs(t, err, ErrRequestBodyTooLarge)
+	require.Nil(t, bs)
+}
+
+func TestCreateFileRejectsOversizedBody(t *testing.T) {
+	original := MaxBodySize()
+	t.Cleanup(func() {
+		SetMaxBodySize(original)
+	})
+
+	// Build a valid ACH JSON file, then pad it past a tight body limit so that a
+	// silent truncate would still leave parseable JSON prefix content.
+	f := ach.NewFile()
+	f.ID = "oversized-should-not-store"
+	f.Header = *mockFileHeader()
+	batch := mockBatchWEB(t)
+	batch.Entries[0].TraceNumber = "121042880000007"
+	f.AddBatch(batch)
+
+	var body bytes.Buffer
+	require.NoError(t, json.NewEncoder(&body).Encode(f))
+	// Pad with spaces after the JSON object; truncation mid-pad would still parse.
+	body.WriteString(strings.Repeat(" ", 256))
+
+	// Limit smaller than the full payload but large enough that a truncated read
+	// could still produce a partial *ach.File under the old LimitReader behavior.
+	require.Greater(t, body.Len(), 64)
+	SetMaxBodySize(int64(body.Len() - 32))
+
+	repo := NewRepositoryInMemory(testTTLDuration, log.NewNopLogger())
+	svc := NewService(repo)
+	handler := MakeHTTPHandler(svc, repo, kitlog.NewNopLogger())
+
+	req := httptest.NewRequest("POST", "/files/create", bytes.NewReader(body.Bytes()))
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("x-request-id", "oversized-body")
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusRequestEntityTooLarge, w.Code, w.Body.String())
+	require.Contains(t, w.Body.String(), "request body too large")
+
+	// Failed create must leave the repository unchanged.
+	files := svc.GetFiles()
+	require.Empty(t, files)
+
+	_, err := svc.GetFile(f.ID)
+	require.ErrorIs(t, err, ErrNotFound)
+}
+
+func TestSetMaxBodySizeIgnoresNonPositive(t *testing.T) {
+	original := MaxBodySize()
+	t.Cleanup(func() {
+		SetMaxBodySize(original)
+	})
+
+	SetMaxBodySize(defaultMaxBodySize)
+	SetMaxBodySize(0)
+	require.Equal(t, defaultMaxBodySize, MaxBodySize())
+	SetMaxBodySize(-1)
+	require.Equal(t, defaultMaxBodySize, MaxBodySize())
+}

@@ -1,25 +1,26 @@
 module github.com/moov-io/ach
 
-go 1.25.0
+go 1.25.8
 
 toolchain go1.26.5
 
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/aws/aws-lambda-go v1.54.0
+	github.com/docker/go-units v0.5.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/gorilla/mux v1.8.1
 	github.com/igrmk/treemap/v2 v2.0.1
 	github.com/juju/ansiterm v1.0.0
-	github.com/moov-io/base v0.61.3
+	github.com/moov-io/base v0.63.0
 	github.com/moov-io/iso3166 v0.4.0
 	github.com/moov-io/iso4217 v0.4.0
 	github.com/prometheus/client_golang v1.24.1
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/net v0.57.0
 	golang.org/x/sync v0.22.0
-	golang.org/x/text v0.40.0
+	golang.org/x/text v0.41.0
 )
 
 require (
@@ -35,7 +36,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
-	github.com/rickar/cal/v2 v2.1.27 // indirect
+	github.com/rickar/cal/v2 v2.1.29 // indirect
 	golang.org/x/exp v0.0.0-20260529124908-c761662dc8c9 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect

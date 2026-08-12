@@ -1175,10 +1175,10 @@ components:
           example: "913b5742"
         serviceClassCode:
           type: integer
-          description: Service Class Code - Mixed Debits and Credits '200', ACH Credits Only '220', or ACH Debits Only '225'
+          description: Service Class Code - Mixed Debits and Credits '200', ACH Credits Only '220', ACH Debits Only '225', or Automated Accounting Advices '280' (ADV files only)
           example: 220
           maximum: 999
-          enum: [200, 220, 225]
+          enum: [200, 220, 225, 280]
         companyName:
           type: string
           description: Company originating the entries in the batch
@@ -1198,7 +1198,31 @@ components:
           maxLength: 10
         standardEntryClassCode:
           type: string
-          description: Identifies the payment type (product) found within an ACH batch using a 3-character code.
+          description: |
+            Identifies the payment type (product) found within an ACH batch using a 3-character code.
+            ACK - ACH Payment Acknowledgment |
+            ADV - Automated Accounting Advice |
+            ARC - Accounts Receivable Entry |
+            ATX - Financial EDI Acknowledgment |
+            BOC - Back Office Conversion Entry |
+            CCD - Corporate Credit or Debit Entry |
+            CIE - Customer Initiated Entry |
+            COR - Notification of Change or Refused Notification of Change |
+            CTX - Corporate Trade Exchange |
+            DNE - Death Notification Entry |
+            ENR - Automated Enrollment Entry |
+            IAT - International ACH Transaction |
+            MTE - Machine Transfer Entry |
+            POP - Point of Purchase Entry |
+            POS - Point of Sale Entry |
+            PPD - Prearranged Payment and Deposit Entry |
+            RCK - Re-presented Check Entry |
+            SHR - Shared Network Transaction |
+            TEL - Telephone-Initiated Entry |
+            TRC - Check Truncation Entry |
+            TRX - Check Truncation Entries Exchange |
+            WEB - Internet-Initiated/Mobile Entry |
+            XCK - Destroyed Check Entry
           example: "PPD"
           maxLength: 3
         companyEntryDescription:
@@ -1232,7 +1256,7 @@ components:
             2 - This code identifies the Originator as a Federal Government entity or agency.
           example: 1
           maximum: 9
-          enum: [0,1,2]
+          enum: [0, 1, 2]
         ODFIIdentification:
           description: First 8 digits of the originating DFI transit routing number
           type: string
@@ -1265,7 +1289,7 @@ components:
           type: integer
           example: 220
           maximum: 999
-          enum: [200, 220, 225]
+          enum: [200, 220, 225, 280]
         entryAddendaCount:
           description: EntryAddendaCount is a tally of each Entry Detail Record and each Addenda Record processed, within either the batch or file as appropriate.
           type: integer
@@ -1347,17 +1371,39 @@ components:
           type: integer
           description: |
             Based on transaction type:
+            21 - Return or NOC for a credit to checking account |
             22 - Credit (deposit) to checking account |
             23 - Prenote for credit to checking account |
+            24 - Zero dollar with remittance data (credit) to checking account |
+            26 - Return or NOC for a debit to checking account |
             27 - Debit (withdrawal) to checking account |
             28 - Prenote for debit to checking account |
+            29 - Zero dollar with remittance data (debit) to checking account |
+            31 - Return or NOC for a credit to savings account |
             32 - Credit to savings account |
             33 - Prenote for credit to savings account |
+            34 - Zero dollar with remittance data (credit) to savings account |
+            36 - Return or NOC for a debit to savings account |
             37 - Debit to savings account |
-            38 - Prenote for debit to savings account
+            38 - Prenote for debit to savings account |
+            39 - Zero dollar with remittance data (debit) to savings account |
+            41 - Return or NOC for a credit to general ledger (GL) account |
+            42 - Credit to general ledger (GL) account |
+            43 - Prenote for credit to general ledger (GL) account |
+            44 - Zero dollar with remittance data (credit) to general ledger (GL) account |
+            46 - Return or NOC for a debit to general ledger (GL) account |
+            47 - Debit to general ledger (GL) account |
+            48 - Prenote for debit to general ledger (GL) account |
+            49 - Zero dollar with remittance data (debit) to general ledger (GL) account |
+            51 - Return or NOC for a credit to loan account |
+            52 - Credit to loan account |
+            53 - Prenote for credit to loan account |
+            54 - Zero dollar with remittance data (credit) to loan account |
+            55 - Debit to loan account (reversals only) |
+            56 - Return or NOC for a debit to loan account
           example: 22
           maximum: 99
-          enum: [22,23,27,28,32,33,37,38]
+          enum: [21, 22, 23, 24, 26, 27, 28, 29, 31, 32, 33, 34, 36, 37, 38, 39, 41, 42, 43, 44, 46, 47, 48, 49, 51, 52, 53, 54, 55, 56]
         RDFIIdentification:
           type: string
           description: RDFI's routing number without the last digit.
@@ -1447,7 +1493,8 @@ components:
           $ref: '#/components/schemas/Addenda99Contested'
         category:
           type: string
-          description: Category defines if the entry is a Forward, Return, or NOC
+          description: |
+            Category defines if the entry is a Forward, Return, NOC, DishonoredReturn, or DishonoredReturnContested
           example: "Forward"
         lineNumber:
           type: integer
@@ -1574,24 +1621,28 @@ components:
         transactionTypeCode:
           type: string
           description: |
-            Describes the type of payment:
-            'ANN' = Annuity |
-            'BUS' = Business/Commercial |
-            'DEP' = Deposit |
-            'LOA' = Loan |
-            'MIS' = Miscellaneous |
-            'MOR' = Mortgage |
-            'PEN' = Pension |
-            'RLS' = Rent/Lease |
-            'REM' = Remittance2 |
-            'SAL' = Salary/Payroll |
-            'TAX' = Tax |
-            'TEL' = Telephone-Initiated Transaction |
-            'WEB' = Internet-Initiated Transaction |
-            'ARC' = Accounts Receivable Entry |
-            'BOC' = Back Office Conversion Entry |
-            'POP' = Point of Purchase Entry |
-            'RCK' = Re-presented Check Entry
+            Describes the type of payment (secondary SEC code):
+            ANN - Annuity |
+            BUS - Business/Commercial |
+            DEP - Deposit |
+            LOA - Loan |
+            MIS - Miscellaneous |
+            MOR - Mortgage |
+            PEN - Pension |
+            REM - Remittance |
+            RLS - Rent/Lease |
+            SAL - Salary/Payroll |
+            TAX - Tax |
+            ARC - Accounts Receivable Entry |
+            BOC - Back Office Conversion Entry |
+            IAT - International ACH Transaction |
+            MTE - Machine Transfer Entry |
+            POP - Point of Purchase Entry |
+            POS - Point of Sale Entry |
+            RCK - Re-presented Check Entry |
+            SHR - Shared Network Transaction |
+            TEL - Telephone-Initiated Transaction |
+            WEB - Internet-Initiated Transaction
           example: TEL
         foreignPaymentAmount:
           type: integer
@@ -2002,7 +2053,28 @@ components:
           example: "98"
         changeCode:
           type: string
-          description: ChangeCode field contains a standard code used by an ACH Operator or RDFI to describe the reason for a change Entry.
+          description: |
+            ChangeCode field contains a standard code used by an ACH Operator or RDFI to describe the reason for a change Entry.
+            C01 - Incorrect bank account number |
+            C02 - Incorrect transit/routing number |
+            C03 - Incorrect transit/routing number and bank account number |
+            C04 - Bank account name change |
+            C05 - Incorrect transaction code |
+            C06 - Incorrect bank account number and transit code |
+            C07 - Incorrect transit/routing number, bank account number and transaction code |
+            C08 - Incorrect Receiving transit/routing number (IAT only) |
+            C09 - Incorrect individual ID number |
+            C13 - Addenda Format Error |
+            C14 - Incorrect SEC Code for outbound IAT payment |
+            C61 - Misrouted Notification of Change |
+            C62 - Incorrect Trace Number |
+            C63 - Incorrect Company Identification Number |
+            C64 - Incorrect Individual Identification Number or Identification Number |
+            C65 - Incorrectly Formatted Corrected Data |
+            C66 - Incorrect Discretionary Data |
+            C67 - Routing Number not from Original Entry Detail Record |
+            C68 - DFI Account Number not from Original Entry Detail Record |
+            C69 - Incorrect Transaction Code
           example: C01
         originalTrace:
           type: string
@@ -2045,7 +2117,17 @@ components:
           example: "98"
         refusedChangeCode:
           type: string
-          description: The code specifying why the Notification of Change is being refused.
+          description: |
+            The code specifying why the Notification of Change is being refused.
+            C61 - Misrouted Notification of Change |
+            C62 - Incorrect Trace Number |
+            C63 - Incorrect Company Identification Number |
+            C64 - Incorrect Individual Identification Number or Identification Number |
+            C65 - Incorrectly Formatted Corrected Data |
+            C66 - Incorrect Discretionary Data |
+            C67 - Routing Number not from Original Entry Detail Record |
+            C68 - DFI Account Number not from Original Entry Detail Record |
+            C69 - Incorrect Transaction Code
         originalTrace:
           type: string
           description: |
@@ -2063,7 +2145,9 @@ components:
           example: "198424892"
         changeCode:
           type: string
-          description: ChangeCode field contains a standard code used by an ACH Operator or RDFI to describe the reason for a change Entry.
+          description: |
+            ChangeCode field contains a standard code used by an ACH Operator or RDFI to describe the reason for a change Entry.
+            See Addenda98.changeCode for the full list of values.
           example: C01
         traceSequenceNumber:
           type: string
@@ -2097,7 +2181,9 @@ components:
           example: "99"
         returnCode:
           type: string
-          description: Standard code used by an ACH Operator or RDFI to describe the reason for returning an Entry.
+          description: |
+            Standard code used by an ACH Operator or RDFI to describe the reason for returning an Entry.
+            Values match Nacha return reason codes supported by moov-io/ach (R01-R47, R50-R53, R61-R62, R67-R77, R80-R85, R90).
           example: "R01"
         originalTrace:
           type: string
@@ -2161,12 +2247,20 @@ components:
           example: "200102"
         returnReasonCode:
           type: string
-          description: Return reason code
-          example: "R12"
+          description: |
+            Original return reason code (2-character numeric portion as stored on the dishonored addenda, e.g. "01" for R01).
+          example: "01"
         dishonoredReturnReasonCode:
           type: string
-          description: Return reason code of the Dishonored Return
-          example: "R12"
+          description: |
+            Return reason code of the Dishonored Return:
+            R61 - Misrouted Return |
+            R62 - Return of Erroneous or Reversing Debt |
+            R67 - Duplicate Return |
+            R68 - Untimely Return |
+            R69 - Field Error(s) |
+            R70 - Permissible Return Entry Not Accepted/Return Not Requested by ODFI
+          example: "R61"
         traceNumber:
           type: string
           description: Matches the Entry Detail Trace Number of the entry being returned.
@@ -2199,16 +2293,31 @@ components:
           example: "99"
         contestedReturnCode:
           type: string
-          description: "return code explaining the contested dishonorment"
-          example: "R12"
+          description: |
+            Return code explaining the contested dishonorment:
+            R71 - Misrouted Dishonored Return |
+            R72 - Untimely Dishonored Return |
+            R73 - Timely Original Return |
+            R74 - Corrected Return |
+            R75 - Return Not a Duplicate |
+            R76 - No Errors Found |
+            R77 - Non-Acceptance of R62 Dishonored Return
+          example: "R71"
         dateOriginalEntryReturned:
           type: string
           description: Date original entry was returned
           example: "200102"
         dishonoredReturnReasonCode:
           type: string
-          description: Return reason code of the Dishonored Return
-          example: "R12"
+          description: |
+            Return reason code of the Dishonored Return:
+            R61 - Misrouted Return |
+            R62 - Return of Erroneous or Reversing Debt |
+            R67 - Duplicate Return |
+            R68 - Untimely Return |
+            R69 - Field Error(s) |
+            R70 - Permissible Return Entry Not Accepted/Return Not Requested by ODFI
+          example: "R61"
         dishonoredReturnTraceNumber:
           type: string
           description: Trace number from Dishonored Return
@@ -2239,8 +2348,9 @@ components:
           example: "200102"
         returnReasonCode:
           type: string
-          description: Return reason code
-          example: "R12"
+          description: |
+            Original return reason code (2-character numeric portion as stored on the contested addenda, e.g. "01" for R01).
+          example: "01"
         traceNumber:
           type: string
           description: Unique Trace Number for the contested dishonored return
@@ -2289,11 +2399,11 @@ components:
           type: string
           example: a747e53f
         serviceClassCode:
-          description: Service Class Code - Mixed Debits and Credits '200', ACH Credits Only '220', or ACH Debits Only '225'
+          description: Service Class Code - Mixed Debits and Credits '200', ACH Credits Only '220', or ACH Debits Only '225'. Automated Accounting Advices '280' is not valid for IAT.
           type: integer
           example: 220
         IATIndicator:
-          description: Leave Blank. Only used for corrected IAT entries
+          description: Leave blank for normal IAT entries. Use 'IATCOR' for corrected IAT entries (Notification of Change).
           type: string
           example: ""
         foreignExchangeIndicator:
@@ -2328,12 +2438,8 @@ components:
         standardEntryClassCode:
           description: |
             StandardEntryClassCode for consumer and non consumer international payments is IAT.
+            Use COR for IAT Notification of Change batches.
             Identifies the payment type (product) found within an ACH batch using a 3-character code.
-            The SEC Code pertains to all items within batch.
-            Determines format of the detail records.
-            Determines addenda records (required or optional PLUS one or up to 9,999 records).
-            Determines rules to follow (return time frames).
-            Some SEC codes require specific data in predetermined fields within the ACH record.
           type: string
           example: IAT
         companyEntryDescription:
@@ -2411,15 +2517,38 @@ components:
           type: integer
           description: |
             Based on transaction type:
+            21 - Return or NOC for a credit to checking account |
             22 - Credit (deposit) to checking account |
             23 - Prenote for credit to checking account |
+            24 - Zero dollar with remittance data (credit) to checking account |
+            26 - Return or NOC for a debit to checking account |
             27 - Debit (withdrawal) to checking account |
             28 - Prenote for debit to checking account |
+            29 - Zero dollar with remittance data (debit) to checking account |
+            31 - Return or NOC for a credit to savings account |
             32 - Credit to savings account |
             33 - Prenote for credit to savings account |
+            34 - Zero dollar with remittance data (credit) to savings account |
+            36 - Return or NOC for a debit to savings account |
             37 - Debit to savings account |
-            38 - Prenote for debit to savings account
+            38 - Prenote for debit to savings account |
+            39 - Zero dollar with remittance data (debit) to savings account |
+            41 - Return or NOC for a credit to general ledger (GL) account |
+            42 - Credit to general ledger (GL) account |
+            43 - Prenote for credit to general ledger (GL) account |
+            44 - Zero dollar with remittance data (credit) to general ledger (GL) account |
+            46 - Return or NOC for a debit to general ledger (GL) account |
+            47 - Debit to general ledger (GL) account |
+            48 - Prenote for debit to general ledger (GL) account |
+            49 - Zero dollar with remittance data (debit) to general ledger (GL) account |
+            51 - Return or NOC for a credit to loan account |
+            52 - Credit to loan account |
+            53 - Prenote for credit to loan account |
+            54 - Zero dollar with remittance data (credit) to loan account |
+            55 - Debit to loan account (reversals only) |
+            56 - Return or NOC for a debit to loan account
           example: 22
+          maximum: 99
         RDFIIdentification:
           type: string
           description: RDFI's routing number without the last digit.
@@ -2487,7 +2616,8 @@ components:
           $ref: '#/components/schemas/Addenda99'
         category:
           type: string
-          description: Category defines if the entry is a Forward, Return, or NOC
+          description: |
+            Category defines if the entry is a Forward, Return, NOC, DishonoredReturn, or DishonoredReturnContested
           example: Forward
         lineNumber:
           type: integer
@@ -2539,6 +2669,7 @@ components:
             87 - Summary credit for respondent ACH activity |
             88 - Summary debit for respondent ACH activity
           example: 81
+          maximum: 99
         RDFIIdentification:
           type: string
           description: RDFI's routing number without the last digit.
@@ -2602,7 +2733,8 @@ components:
             $ref: '#/components/schemas/Addenda99'
         category:
           type: string
-          description: Category defines if the entry is a Forward, Return, or NOC
+          description: |
+            Category defines if the entry is a Forward, Return, NOC, DishonoredReturn, or DishonoredReturnContested
           example: Forward
         lineNumber:
           type: integer
@@ -2615,9 +2747,11 @@ components:
           type: string
           example: 62d8f0cd
         serviceClassCode:
-          description: Same as ServiceClassCode in BatchHeader record
+          description: |
+            Same as ServiceClassCode in BatchHeader record. ADV batches use Automated Accounting Advices '280'.
+            Also accepts Mixed Debits and Credits '200', ACH Credits Only '220', or ACH Debits Only '225'.
           type: integer
-          example: 220
+          example: 280
         entryAddendaCount:
           description: EntryAddendaCount is a tally of each Entry Detail Record and each Addenda Record processed, within either the batch or file as appropriate.
           type: integer
@@ -2724,7 +2858,8 @@ components:
           example: "216112"
         accountType:
           type: string
-          description: Account type used in offset record
+          description: Account type used in offset record. Supported values are checking and savings.
+          example: checking
           enum:
             - checking
             - savings
