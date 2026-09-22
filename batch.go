@@ -172,7 +172,22 @@ func (batch *Batch) UnmarshalJSON(p []byte) error {
 	if aux.Offset != nil {
 		batch.offset = aux.Offset
 	}
+	// NewADVBatchControl defaults ServiceClassCode to 280. Keep that default
+	// only when the payload included advBatchControl or the batch is ADV.
+	if !jsonObjectHasKey(p, "advBatchControl") && (batch.Header == nil || batch.Header.StandardEntryClassCode != ADV) {
+		batch.ADVControl = nil
+	}
 	return nil
+}
+
+// jsonObjectHasKey reports whether p is a JSON object containing key.
+func jsonObjectHasKey(p []byte, key string) bool {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(p, &raw); err != nil {
+		return false
+	}
+	_, ok := raw[key]
+	return ok
 }
 
 // NewBatch takes a BatchHeader and returns a matching SEC code batch type that is a batcher. Returns an error if the SEC code is not supported.
@@ -473,6 +488,9 @@ func (batch *Batch) build() error {
 		bc.EntryHash = batch.calculateEntryHash()
 		bc.TotalCreditEntryDollarAmount, bc.TotalDebitEntryDollarAmount = batch.calculateBatchAmounts()
 		batch.Control = bc
+		// A non-ADV batch uses BatchControl. Drop any ADV control, including the
+		// service class 280 default installed while decoding JSON.
+		batch.ADVControl = nil
 	} else {
 		for i, entry := range batch.ADVEntries {
 			entryCount++
@@ -881,6 +899,15 @@ func (batch *Batch) isTraceNumberODFI() error {
 // isAddendaSequence check multiple errors on addenda records in the batch entries
 func (batch *Batch) isAddendaSequence() error {
 	for _, entry := range batch.Entries {
+
+		// Check that AddendaRecordIndicator matches the actual addenda count
+		addendaCount := entry.addendaCount()
+		if addendaCount > 0 && entry.AddendaRecordIndicator != 1 {
+			return batch.Error("AddendaRecordIndicator", ErrBatchAddendaIndicator)
+		}
+		if addendaCount == 0 && entry.AddendaRecordIndicator == 1 {
+			return batch.Error("AddendaRecordIndicator", ErrBatchAddendaRequired)
+		}
 
 		if entry.Addenda02 != nil {
 			if entry.AddendaRecordIndicator != 1 {
