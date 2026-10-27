@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -401,7 +400,7 @@ func (f *File) setBatchesFromJSON(bs []byte) error {
 			switch batch.GetHeader().StandardEntryClassCode {
 			case ATX, CTX:
 				addendaIndicator := e.AddendaRecordIndicator
-				addendaField, _ := strconv.Atoi(e.CATXAddendaRecordsField())
+				addendaField, hasCount := catxAddendaCount(e.IndividualName)
 
 				individualName := e.IndividualName
 
@@ -412,7 +411,7 @@ func (f *File) setBatchesFromJSON(bs []byte) error {
 					e.SetCATXAddendaRecords(addendaField)
 				}
 
-				if addendaField == 0 {
+				if !hasCount {
 					e.SetCATXReceivingCompany(individualName)
 				}
 			}
