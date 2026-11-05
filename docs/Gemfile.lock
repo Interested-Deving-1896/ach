@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.9.0)
+    addressable (2.9.2)
       public_suffix (>= 2.0.2, < 8.0)
     bulma-clean-theme (0.14.0)
       jekyll (>= 3.9, < 5.0)
@@ -42,7 +42,7 @@ GEM
     jekyll-feed (0.18.0)
       jekyll (>= 3.7, < 5.0)
     jekyll-paginate (1.1.0)
-    jekyll-remote-theme (0.6.2)
+    jekyll-remote-theme (0.6.3)
       addressable (~> 2.0)
       jekyll (>= 3.5, < 5.0)
       jekyll-sass-converter (>= 1.0, < 4.0, != 2.0.0)
